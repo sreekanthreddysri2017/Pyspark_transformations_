@@ -85,4 +85,66 @@ else:
 
 # COMMAND ----------
 
+dbutils.fs.mount(
+source='wasbs://input@lateststorageaccunt.blob.core.windows.net/',
+mount_point= '/mnt/sreekanth',
+extra_configs={'fs.azure.account.key.lateststorageaccunt.blob.core.windows.net':'uZ+UfqgOimTkMBIzENI8XqmGKbhPq+sCZWpj2fq1kw+F8869w1bErU7YJbmylZBAVIdj+8FnEiOj+AStL50/6g=='}
+)
 
+# COMMAND ----------
+
+# MAGIC %fs ls
+# MAGIC
+# MAGIC dbfs:/mnt/sreekanth/bronze/
+
+# COMMAND ----------
+
+option={'multiline':'true'}
+
+def read_json(format,path,option):
+    return spark.read.format(format).options(**option).load(path)
+
+# COMMAND ----------
+
+df=read_json('json','dbfs:/mnt/sreekanth/bronze/sample.json',option)
+display(df)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import*
+
+split_data =df.withColumn("Final_price1", split(df['Final price'],","))
+
+# COMMAND ----------
+
+df2=split_data.select('*',posexplode('Final_price1').alias('pos_Final_price_new','Final_price_new'))
+display(df2)
+
+# COMMAND ----------
+
+df3=df2.withColumn("Product_Quantity1", split(df['Product Quantity'],",")).withColumn("Product_basePrice1", split(df['Product basePrice'],","))
+display(df3)
+
+# COMMAND ----------
+
+df4=df3.select('*',posexplode('Product_Quantity1').alias('pos_Product_Quantity','Product_Quantity_new'))
+display(df4)
+
+# COMMAND ----------
+
+df5=df4.select('*',posexplode('Product_basePrice1').alias('pos_Product_basePrice1','Product_basePrice1_new'))
+
+# COMMAND ----------
+
+display(df5)
+
+# COMMAND ----------
+
+df6=df5.drop('Final_price1','Product_Quantity1','Product_basePrice1')
+display(df6)
+
+# COMMAND ----------
+
+df7=df6.filter((df6['pos_Final_price_new']==df6['pos_Product_Quantity']) & (df6['pos_Product_Quantity']==df6['pos_Product_basePrice1']))
+
+display(df7)
