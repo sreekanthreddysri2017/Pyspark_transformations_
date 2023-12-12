@@ -148,3 +148,4 @@ display(df6)
 df7=df6.filter((df6['pos_Final_price_new']==df6['pos_Product_Quantity']) & (df6['pos_Product_Quantity']==df6['pos_Product_basePrice1']))
 
 display(df7)
+#
